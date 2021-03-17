@@ -21,6 +21,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <chrono>
 
 //######################################################################
 
@@ -129,6 +130,94 @@ void VlcTop::writeInfo(const string& filename) {
         }
         os << "end_of_record\n";
     }
+}
+
+void VlcTop::writeXml(const string& filename, const string& rootPath) {
+    UINFO(2, "writeXml " << filename << endl);
+
+    std::ofstream os(filename.c_str());
+    if (!os) {
+        v3fatal("Can't write " << filename);
+        return;
+    }
+
+    size_t root_len = rootPath.length() + 1;
+
+    annotateCalc();
+
+    int lines_global_total = 0;
+    int lines_global_covered = 0;
+
+    std::ostringstream classes_body;
+
+    for (auto& si : m_sources) {
+        VlcSource& source = si.second;
+        std::ostringstream class_body;
+        class_body << "          <methods/>\n";
+        class_body << "          <lines>\n";
+        VlcSource::LinenoMap& lines = source.lines();
+        int lines_total = 0;
+        int lines_covered = 0;
+        for (auto& li : lines) {
+            int lineno = li.first;
+            VlcSource::ColumnMap& cmap = li.second;
+            lines_total++;
+            bool first = true;
+            vluint64_t min_count = 0;  // Minimum across all columns on line
+            for (auto& ci : cmap) {
+                VlcSourceCount& col = ci.second;
+                if (first) {
+                    min_count = col.count();
+                    first = false;
+                } else {
+                    min_count = std::min(min_count, col.count());
+                }
+            }
+            if (min_count > 0)
+                lines_covered++;
+            class_body << "            <line number=\"" << lineno << "\" hits=\"" << min_count << "\" branch=\"false\"/>\n";
+        }
+        class_body << "          </lines>\n";
+
+        lines_global_total += lines_total;
+        lines_global_covered += lines_covered;
+
+        float line_rate;
+        if (lines_total == 0)
+            line_rate = 1.0f;
+        else
+            line_rate = (float)lines_covered / (float)lines_total;
+
+        if (source.name().rfind(rootPath, 0) != 0)
+            continue;
+
+        classes_body << "        <class name=\"" << source.base_name() << "\" filename=\"" << source.name().substr(root_len) << "\" line-rate=\"" << line_rate << "\" branch-rate=\"0\" complexity=\"0\">\n";
+        classes_body << class_body.str();
+        classes_body << "        </class>\n";
+    }
+
+    float line_rate;
+    if (lines_global_total == 0)
+        line_rate = 1.0f;
+    else
+        line_rate = (float)lines_global_covered / (float)lines_global_total;
+
+    auto milliseconds_since_epoch = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+    os << "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
+    os << "<!DOCTYPE coverage SYSTEM \"http://cobertura.sourceforge.net/xml/coverage-04.dtd\">\n";
+    os << "<coverage line-rate=\"" << line_rate << "\" branch-rate=\"0\" lines-covered=\"" << lines_global_covered << "\" lines-valid=\"" << lines_global_total << "\" branches-covered=\"0\" branches-valid=\"0\" complexity=\"0\" timestamp=\"" << milliseconds_since_epoch << "\" version=\"" << DTVERSION << "\">\n";
+    os << "  <sources>\n";
+    os << "    <source>" << rootPath << "</source>\n";
+    os << "  </sources>\n";
+    os << "  <packages>\n";
+    os << "    <package name=\"\" line-rate=\"" << line_rate << "\" branch-rate=\"0\" complexity=\"0\">\n";
+    os << "      <classes>\n";
+    os << classes_body.str();
+    os << "      </classes>\n";
+    os << "    </package>\n";
+    os << "  </packages>\n";
+    os << "</coverage>\n";
 }
 
 //********************************************************************

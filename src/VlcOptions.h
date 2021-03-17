@@ -42,6 +42,8 @@ class VlcOptions final {
     bool m_unlink=false;              // main switch: --unlink
     string m_writeFile;         // main switch: --write
     string m_writeInfoFile;     // main switch: --write-info
+    string m_writeXmlFile;      // main switch: --write-xml
+    string m_rootPath;          // main switch: --root
     // clang-format on
 
 private:
@@ -67,6 +69,8 @@ public:
     bool unlink() const { return m_unlink; }
     string writeFile() const { return m_writeFile; }
     string writeInfoFile() const { return m_writeInfoFile; }
+    string writeXmlFile() const { return m_writeXmlFile; }
+    string rootPath() const { return m_rootPath; }
 
     // METHODS (from main)
     static string version();

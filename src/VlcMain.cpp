@@ -111,6 +111,12 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
             } else if (!strcmp(sw, "-write-info") && (i + 1) < argc) {
                 shift;
                 m_writeInfoFile = argv[i];
+            } else if (!strcmp(sw, "-write-xml") && (i + 1) < argc) {
+                shift;
+                m_writeXmlFile = argv[i];
+            } else if (!strcmp(sw, "-root") && (i + 1) < argc) {
+                shift;
+                m_rootPath = argv[i];
             } else {
                 v3fatal("Invalid option: " << argv[i]);
             }
@@ -170,9 +176,12 @@ int main(int argc, char** argv, char** /*env*/) {
         top.tests().dump(false);
     }
 
-    if (!top.opt.writeFile().empty() || !top.opt.writeInfoFile().empty()) {
+    if (!top.opt.writeFile().empty() || !top.opt.writeInfoFile().empty()
+        || !top.opt.writeXmlFile().empty()) {
         if (!top.opt.writeFile().empty()) top.writeCoverage(top.opt.writeFile());
         if (!top.opt.writeInfoFile().empty()) top.writeInfo(top.opt.writeInfoFile());
+        if (!top.opt.writeXmlFile().empty() && !top.opt.rootPath().empty())
+            top.writeXml(top.opt.writeXmlFile(), top.opt.rootPath());
         V3Error::abortIfWarnings();
         if (top.opt.unlink()) {
             const VlStringSet& readFiles = top.opt.readFiles();

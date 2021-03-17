@@ -93,6 +93,12 @@ public:
         VlcSourceCount& sc = cit->second;
         sc.incCount(count, ok);
     }
+
+    const string base_name() const {
+        std::string::size_type const begin(m_name.find_last_of("/\\") + 1);
+        std::string::size_type const end(m_name.find_last_of('.'));
+        return m_name.substr(begin, end - begin);
+    }
 };
 
 //********************************************************************

@@ -58,6 +58,7 @@ public:
     void readCoverage(const string& filename, bool nonfatal = false);
     void writeCoverage(const string& filename);
     void writeInfo(const string& filename);
+    void writeXml(const string& filename, const string& rootPath);
 
     void rank();
 };
